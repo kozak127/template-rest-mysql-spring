@@ -1,0 +1,11 @@
+spring:
+  # Fix for swagger not using PathPattern Based Path Matching Strategy
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 3.3.1

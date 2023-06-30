@@ -1,0 +1,22 @@
+server:
+  port: ${APPLICATION_PORT:8080}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+
+spring:
+  # Fix for swagger not using PathPattern Based Path Matching Strategy
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: my-database
+
+springfox:
+  documentation:
+    swagger-ui:
+      enabled: true
