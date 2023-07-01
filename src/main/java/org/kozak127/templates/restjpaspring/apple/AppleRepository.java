@@ -1,4 +1,4 @@
-package org.kozak127.templates.restmysqlspring.apple;
+package org.kozak127.templates.restjpaspring.apple;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

@@ -1,4 +1,4 @@
-package org.kozak127.templates.restmysqlspring.apple;
+package org.kozak127.templates.restjpaspring.apple;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;

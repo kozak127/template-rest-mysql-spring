@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.kozak127.templates</groupId>
-    <artifactId>rest-mysql-spring</artifactId>
+    <artifactId>rest-jpa-spring</artifactId>
     <version>0.0.1</version>
 
     <properties>
@@ -37,16 +37,10 @@
             <version>${spring-boot.version}</version>
         </dependency>
 
-        <!-- Database stuff -->
         <dependency>
-            <groupId>org.liquibase</groupId>
-            <artifactId>liquibase-core</artifactId>
-            <version>${liquibase.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>${mysql-connector.version}</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.200</version>
         </dependency>
 
         <!-- Swagger -->

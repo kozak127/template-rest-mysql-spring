@@ -1,14 +1,15 @@
-package org.kozak127.templates.restmysqlspring.apple;
+package org.kozak127.templates.restjpaspring.apple;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.kozak127.templates.restjpaspring.DefaultController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.kozak127.templates.restmysqlspring.DefaultController;
 
 
 @RestController
@@ -26,6 +27,7 @@ public class AppleController extends DefaultController {
             @ApiResponse(responseCode = "404", description = "Cannot find Apple with specified ID")
     })
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<AppleDTO> getAppleById(@PathVariable String id) {
         return appleRepository.findById(id)
                 .map(AppleDTO::fromEntity)
@@ -35,16 +37,11 @@ public class AppleController extends DefaultController {
 
     @Operation(summary = "Save apple", description = "Save apple")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Apple saved successfully"),
-            @ApiResponse(responseCode = "409", description = "Conflicting apple ID. Entity already exists")
+            @ApiResponse(responseCode = "201", description = "Apple saved successfully")
     })
     @PostMapping
+    @Transactional
     public ResponseEntity<AppleDTO> saveApple(@RequestBody AppleDTO appleDTO) {
-
-        if (appleRepository.existsById(appleDTO.getId())) {
-            return ResponseEntity.status(409).build();
-        }
-
         Apple toSave = Apple.fromDto(appleDTO);
         Apple savedApple = appleRepository.save(toSave);
         AppleDTO toReturn = AppleDTO.fromEntity(savedApple);
@@ -57,6 +54,7 @@ public class AppleController extends DefaultController {
             @ApiResponse(responseCode = "404", description = "Cannot find Apple with specified ID")
     })
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteAppleById(@PathVariable String id) {
         if (appleRepository.existsById(id)) {
             appleRepository.deleteById(id);
@@ -72,11 +70,15 @@ public class AppleController extends DefaultController {
             @ApiResponse(responseCode = "404", description = "Cannot find Apple with specified ID")
     })
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<AppleDTO> updateAppleById(@PathVariable String id, @RequestBody AppleDTO toUpdateDTO) {
         return appleRepository.findById(id)
                 .map(foundApple -> {
-                    Apple toUpdate = Apple.fromDto(toUpdateDTO);
-                    return AppleDTO.fromEntity(appleRepository.save(toUpdate));
+                    Apple updatedApple = foundApple.toBuilder()
+                            .name(toUpdateDTO.getName())
+                            .build();
+                    Apple savedApple = appleRepository.save(updatedApple);
+                    return AppleDTO.fromEntity(savedApple);
                 })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

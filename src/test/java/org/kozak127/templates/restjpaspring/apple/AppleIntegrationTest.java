@@ -1,21 +1,23 @@
-package org.kozak127.templates.restmysqlspring.apple;
+package org.kozak127.templates.restjpaspring.apple;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlMergeMode;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
+@Sql
+@Sql(scripts = "../cleanDatabase.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AppleIntegrationTest {
 
@@ -23,28 +25,20 @@ class AppleIntegrationTest {
     private int port;
 
     @Autowired
-    private MongoTemplate mongoTemplate;
+    private AppleRepository appleRepository;
 
     @Autowired
     private TestRestTemplate restTemplate;
 
-    @AfterEach
-    void cleanDb() {
-        mongoTemplate.remove(new Query(), Apple.class);
-    }
-
     @Test
+    @Sql
     void shouldReturnApple() {
         // GIVEN
-        Apple apple = Apple.builder()
-                .id("apple-id")
-                .name("Red Apple")
-                .build();
-        mongoTemplate.save(apple);
+        String requestAppleId = "apple-id";
 
         // WHEN
         ResponseEntity<String> response = restTemplate.getForEntity(
-                "http://localhost:" + port + "/api/apples/{id}", String.class, "apple-id");
+                "http://localhost:" + port + "/api/apples/{id}", String.class, requestAppleId);
 
         // THEN
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -53,17 +47,14 @@ class AppleIntegrationTest {
     }
 
     @Test
+    @Sql
     void shouldNotReturnApple_invalidId() {
         // GIVEN
-        Apple apple = Apple.builder()
-                .id("apple-id")
-                .name("Red Apple")
-                .build();
-        mongoTemplate.save(apple);
+        String requestAppleId = "invalid-id";
 
         // WHEN
         ResponseEntity<String> response = restTemplate.getForEntity(
-                "http://localhost:" + port + "/api/apples/{id}", String.class, "invalid-id");
+                "http://localhost:" + port + "/api/apples/{id}", String.class, requestAppleId);
 
         // THEN
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -73,7 +64,6 @@ class AppleIntegrationTest {
     void shouldSaveApple() {
         // GIVEN
         AppleDTO appleDTO = AppleDTO.builder()
-                .id("apple-id")
                 .name("Red Apple")
                 .build();
 
@@ -82,102 +72,106 @@ class AppleIntegrationTest {
                 "http://localhost:" + port + "/api/apples", appleDTO, AppleDTO.class);
 
         // THEN
-        List<Apple> applesInDb = mongoTemplate.findAll(Apple.class);
+        List<Apple> applesInDb = appleRepository.findAll();
+
+        AppleDTO savedAppleDTO = response.getBody();
 
         assertThat(applesInDb)
-                .hasSize(1)
-                .containsExactlyInAnyOrder(Apple.fromDto(appleDTO));
+                .hasSize(2)
+                .containsAnyOf(Apple.fromDto(savedAppleDTO));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-        assertThat(response.getBody()).isEqualTo(appleDTO);
     }
 
     @Test
+    @Sql
     void shouldDeleteApple() {
         // GIVEN
+        String requestAppleId = "apple-id";
+
+        // WHEN
+        restTemplate.delete("http://localhost:" + port + "/api/apples/{id}", requestAppleId);
+
+        // THEN
+        List<Apple> applesInDb = appleRepository.findAll();
+
         Apple apple = Apple.builder()
                 .id("apple-id")
                 .name("Red Apple")
                 .build();
-        mongoTemplate.save(apple);
 
-        // WHEN
-        restTemplate.delete("http://localhost:" + port + "/api/apples/{id}", "apple-id");
-
-        // THEN
-        List<Apple> applesInDb = mongoTemplate.findAll(Apple.class);
-
-        assertThat(applesInDb).isEmpty();
+        assertThat(applesInDb)
+                .hasSize(1)
+                .doesNotContain(apple);
     }
 
     @Test
+    @Sql
     void shouldNotDeleteApple_invalidId() {
         // GIVEN
+        String requestAppleId = "invalid-apple-id";
+
+        // WHEN
+        restTemplate.delete("http://localhost:" + port + "/api/apples/{id}", requestAppleId);
+
+        // THEN
+        List<Apple> applesInDb = appleRepository.findAll();
+
         Apple apple = Apple.builder()
                 .id("apple-id")
                 .name("Red Apple")
                 .build();
-        mongoTemplate.save(apple);
-
-        // WHEN
-        restTemplate.delete("http://localhost:" + port + "/api/apples/{id}", "invalid-apple-id");
-
-        // THEN
-        List<Apple> applesInDb = mongoTemplate.findAll(Apple.class);
 
         assertThat(applesInDb)
-                .hasSize(1)
-                .containsExactlyInAnyOrder(apple);
+                .hasSize(2)
+                .containsAnyOf(apple);
     }
 
     @Test
+    @Sql
     void shouldUpdateApple() {
         // GIVEN
-        Apple apple = Apple.builder()
-                .id("apple-id")
-                .name("Red Apple")
-                .build();
-        mongoTemplate.save(apple);
-
+        String requestAppleId = "apple-id";
         AppleDTO updatedAppleDTO = AppleDTO.builder()
-                .id("apple-id")
+                .id(requestAppleId)
                 .name("Green Apple")
                 .build();
 
         // WHEN
-        restTemplate.put("http://localhost:" + port + "/api/apples/{id}", updatedAppleDTO, "apple-id");
+        restTemplate.put("http://localhost:" + port + "/api/apples/{id}", updatedAppleDTO, requestAppleId);
 
         // THEN
-        List<Apple> applesInDb = mongoTemplate.findAll(Apple.class);
+        List<Apple> applesInDb = appleRepository.findAll();
 
         assertThat(applesInDb)
-                .hasSize(1)
-                .containsExactlyInAnyOrder(Apple.fromDto(updatedAppleDTO));
+                .hasSize(2)
+                .containsAnyOf(Apple.fromDto(updatedAppleDTO));
     }
 
     @Test
+    @Sql
     void shouldNotUpdateApple_invalidId() {
         // GIVEN
-        Apple apple = Apple.builder()
-                .id("apple-id")
-                .name("Red Apple")
-                .build();
-        mongoTemplate.save(apple);
-
+        String requestAppleId = "invalid-apple-id";
         AppleDTO updatedAppleDTO = AppleDTO.builder()
                 .id("apple-id")
                 .name("Green Apple")
                 .build();
 
         // WHEN
-        restTemplate.put("http://localhost:" + port + "/api/apples/{id}", updatedAppleDTO, "invalid-apple-id");
+        restTemplate.put("http://localhost:" + port + "/api/apples/{id}", updatedAppleDTO, requestAppleId);
 
         // THEN
-        List<Apple> applesInDb = mongoTemplate.findAll(Apple.class);
+        List<Apple> applesInDb = appleRepository.findAll();
+
+        Apple apple = Apple.builder()
+                .id("apple-id")
+                .name("Red Apple")
+                .build();
 
         assertThat(applesInDb)
-                .hasSize(1)
-                .containsExactlyInAnyOrder(apple);
+                .hasSize(2)
+                .containsAnyOf(apple);
     }
 }

@@ -1,11 +1,24 @@
+server:
+  port: ${APPLICATION_PORT:8080}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+
 spring:
   # Fix for swagger not using PathPattern Based Path Matching Strategy
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
 
-de:
-  flapdoodle:
-    mongodb:
-      embedded:
-        version: 3.3.1
+springfox:
+  documentation:
+    swagger-ui:
+      enabled: true

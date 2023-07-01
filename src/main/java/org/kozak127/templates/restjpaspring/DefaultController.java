@@ -1,4 +1,4 @@
-package org.kozak127.templates.restmysqlspring;
+package org.kozak127.templates.restjpaspring;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
